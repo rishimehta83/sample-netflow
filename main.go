@@ -53,7 +53,7 @@ func GETHandler(w http.ResponseWriter, r *http.Request) {
 
 	userSql := "select distinct src_app, dest_app, vpc_id, sum(bytes_tx) " +
 		   "as bytes_tx, sum(bytes_rx) as bytes_rx, hour from netflow " +
-		   ""where hour = $1 group by (src_app, dest_app, vpc_id, hour);"
+		   "where hour = $1 group by (src_app, dest_app, vpc_id, hour);"
 	rows, err := db.Query(userSql, p)
 	if err != nil {
 		log.Fatal(err)
@@ -72,6 +72,7 @@ func GETHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	flowBytes, _ := json.MarshalIndent(flows, "", "\t")
+        fmt.Println(string(flowBytes))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(flowBytes)
