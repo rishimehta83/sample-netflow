@@ -15,9 +15,9 @@ type NetFlow struct {
 	SrcApp     string `json:"src_app"`
 	DestApp    string `json:"dest_app"`
 	VpcID      string `json:"vpc_id"`
-        BytesTx   int  `json:"bytes_tx"`
-        BytesRx   int `json:"bytes_rx"`
-        Hour       int `json:"hour"`
+        BytesTx    int    `json:"bytes_tx"`
+        BytesRx    int    `json:"bytes_rx"`
+        Hour       int    `json:"hour"`
 }
 
 
@@ -49,8 +49,8 @@ func OpenConnection() *sql.DB {
 
 func GETHandler(w http.ResponseWriter, r *http.Request) {
 	db := OpenConnection()
-
         p, err := strconv.Atoi(r.URL.Query().Get("hour"))       
+
         userSql := "select distinct src_app, dest_app, vpc_id, sum(bytes_tx) as bytes_tx, sum(bytes_rx) as bytes_rx, hour from netflow where hour = $1 group by (src_app, dest_app, vpc_id, hour);"
         rows, err := db.Query(userSql, p)
 	if err != nil {
@@ -86,13 +86,16 @@ func POSTHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+       
 
-	sqlStatement := `INSERT INTO netflow (src_app, dest_app, vpc_id, bytes_tx, bytes_rx, hour) VALUES ($1, $2, $3, $4, $5, $6)`
-       	_, err2 := db.Exec(sqlStatement, p[0].SrcApp, p[0].DestApp, p[0].VpcID, p[0].BytesTx, p[0].BytesRx, p[0].Hour)
-	if err2 != nil {
+        for _, flow := range p {
+	   sqlStatement := `INSERT INTO netflow (src_app, dest_app, vpc_id, bytes_tx, bytes_rx, hour) VALUES ($1, $2, $3, $4, $5, $6)`
+       	   _, err2 := db.Exec(sqlStatement, flow.SrcApp, flow.DestApp, flow.VpcID, flow.BytesTx, flow.BytesRx, flow.Hour)
+	   if err2 != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		panic(err)
-	}
+ 	   }
+        }
 
 	w.WriteHeader(http.StatusOK)
 	defer db.Close()
