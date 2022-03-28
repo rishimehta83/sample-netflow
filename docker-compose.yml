@@ -13,5 +13,5 @@ services:
     volumes: 
       - phonebookdb:/var/lib/postgresql/data
 volumes:
-  phonebookdb:
+  netflowdb:
     driver: local

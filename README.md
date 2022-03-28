@@ -16,7 +16,8 @@ CREATE TABLE netflow (
   vpc_id     VARCHAR(250) NOT NULL,
   bytes_tx   NUMERIC,
   bytes_rx   NUMERIC,
-  hour       NUMERIC,
+  hour       NUMERIC
 );
 
-
+#Launch the app
+go run main.go
