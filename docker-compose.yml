@@ -11,7 +11,7 @@ services:
     ports:
       - '5432:5432'
     volumes: 
-      - phonebookdb:/var/lib/postgresql/data
+      - netflowdb:/var/lib/postgresql/data
 volumes:
   netflowdb:
     driver: local
