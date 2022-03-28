@@ -72,7 +72,6 @@ func GETHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	flowBytes, _ := json.MarshalIndent(flows, "", "\t")
-        fmt.Println(string(flowBytes))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(flowBytes)
@@ -90,6 +89,7 @@ func POSTHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	
        
 	for _, flow := range p {
 		sqlStatement := `INSERT INTO netflow (src_app, dest_app, vpc_id,
