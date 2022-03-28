@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-        "strconv"
+	"strconv"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,9 +15,9 @@ type NetFlow struct {
 	SrcApp     string `json:"src_app"`
 	DestApp    string `json:"dest_app"`
 	VpcID      string `json:"vpc_id"`
-        BytesTx    int    `json:"bytes_tx"`
-        BytesRx    int    `json:"bytes_rx"`
-        Hour       int    `json:"hour"`
+	BytesTx    int    `json:"bytes_tx"`
+	BytesRx    int    `json:"bytes_rx"`
+	Hour       int    `json:"hour"`
 }
 
 
@@ -30,9 +30,9 @@ const (
 )
 
 func OpenConnection() *sql.DB {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s " +
+				"password=%s dbname=%s sslmode=disable",
+				host, port, user, password, dbname)
 
 	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
@@ -49,21 +49,24 @@ func OpenConnection() *sql.DB {
 
 func GETHandler(w http.ResponseWriter, r *http.Request) {
 	db := OpenConnection()
-        p, err := strconv.Atoi(r.URL.Query().Get("hour"))       
+	p, err := strconv.Atoi(r.URL.Query().Get("hour"))       
 
-        userSql := "select distinct src_app, dest_app, vpc_id, sum(bytes_tx) as bytes_tx, sum(bytes_rx) as bytes_rx, hour from netflow where hour = $1 group by (src_app, dest_app, vpc_id, hour);"
-        rows, err := db.Query(userSql, p)
+	userSql := "select distinct src_app, dest_app, vpc_id, sum(bytes_tx) " +
+		   "as bytes_tx, sum(bytes_rx) as bytes_rx, hour from netflow " +
+		   ""where hour = $1 group by (src_app, dest_app, vpc_id, hour);"
+	rows, err := db.Query(userSql, p)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var flows []NetFlow
+	flows := make([]NetFlow, 0)
 
 	for rows.Next() {
 		var flow NetFlow
-		err := rows.Scan(&flow.SrcApp, &flow.DestApp, &flow.VpcID, &flow.BytesTx, &flow.BytesRx, &flow.Hour)
-                if err != nil {
-		   log.Fatal(err)
+		err := rows.Scan(&flow.SrcApp, &flow.DestApp, &flow.VpcID, 
+				 &flow.BytesTx, &flow.BytesRx, &flow.Hour)
+		if err != nil {
+			log.Fatal(err)
                 }
 		flows = append(flows, flow)
 	}
@@ -87,14 +90,16 @@ func POSTHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
        
+	for _, flow := range p {
+		sqlStatement := `INSERT INTO netflow (src_app, dest_app, vpc_id,
+				 bytes_tx, bytes_rx, hour) VALUES ($1, $2, $3, $4, $5, $6)`
+		_, err2 := db.Exec(sqlStatement, flow.SrcApp, flow.DestApp, 
+				   flow.VpcID, flow.BytesTx, flow.BytesRx, flow.Hour)
 
-        for _, flow := range p {
-	   sqlStatement := `INSERT INTO netflow (src_app, dest_app, vpc_id, bytes_tx, bytes_rx, hour) VALUES ($1, $2, $3, $4, $5, $6)`
-       	   _, err2 := db.Exec(sqlStatement, flow.SrcApp, flow.DestApp, flow.VpcID, flow.BytesTx, flow.BytesRx, flow.Hour)
-	   if err2 != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		panic(err)
- 	   }
+		if err2 != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			panic(err)
+ 	   	}
         }
 
 	w.WriteHeader(http.StatusOK)
@@ -103,13 +108,14 @@ func POSTHandler(w http.ResponseWriter, r *http.Request) {
 
 
 func ReqHandler(w http.ResponseWriter, r *http.Request) {
-   switch r.Method {
-      case "GET":
-          GETHandler(w, r)
-      case "POST":
-          POSTHandler(w, r)
 
-   }
+	switch r.Method {
+		case "GET":
+			GETHandler(w, r)
+		case "POST":
+			POSTHandler(w, r)
+
+	}
 }
 
 func main() {
